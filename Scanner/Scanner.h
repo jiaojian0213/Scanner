@@ -20,7 +20,9 @@ namespace scanner{
 
         Scanner(cv::Mat& bitmap);
         virtual ~Scanner();
+		std::vector<std::vector<cv::Point>> getPointLists(cv::Mat &image);
         std::vector<cv::Point> scanPoint();
+		cv::Mat resizeImage();
 		cv::Mat preprocessedImage(cv::Mat &image, int cannyValue, int blurValue);
     private:
         cv::Mat srcBitmap;
@@ -28,7 +30,7 @@ namespace scanner{
 
         bool isHisEqual = false;
 
-        cv::Mat resizeImage();
+
 
 
 

@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by qiulinmin on 8/1/17.
 //
 #include <Scanner.h>
@@ -20,6 +20,30 @@ Scanner::Scanner(cv::Mat& bitmap) {
 Scanner::~Scanner() {
 }
 
+vector<vector<Point>> Scanner::getPointLists(Mat &image){
+	IplImage pTemp(image);
+	CvSeq* contour = 0;
+	CvMemStorage* storage = cvCreateMemStorage(0);
+	contour = cvCreateSeq(CV_32SC2, sizeof(CvSeq), sizeof(CvPoint), storage);
+	int a = cvFindContours(&pTemp, storage, &contour, sizeof(CvContour), CV_RETR_LIST, CV_CHAIN_APPROX_NONE);//CvSeq** 
+	vector<vector<Point>> pointLists;
+	//// 直接使用CONTOUR中的矩形来画轮廓
+	for (; contour; contour = contour->h_next)
+	{
+		int onetourlength = contour->total;
+		CvSeqReader reader; //-- 读其中一个轮廓序列
+		CvPoint pt = cvPoint(0, 0);
+		cvStartReadSeq(contour, &reader); //开始提取 
+		vector<Point> pointss;
+		for (int i = 0; i < onetourlength; i++){
+			CV_READ_SEQ_ELEM(pt, reader); //--读其中一个序列中的一个元素点
+			pointss.push_back(Point(pt.x, pt.y));
+		} //把这个轮廓点找出后，就可以用这些点画个封闭线 
+		pointLists.push_back(pointss);
+	}
+	return pointLists;
+}
+
 vector<Point> Scanner::scanPoint() {
 	vector<Point> result;
 	int cannyValue[] = { 100, 150, 300 };
@@ -32,10 +56,12 @@ vector<Point> Scanner::scanPoint() {
 			//预处理图片
 			Mat scanImage = preprocessedImage(image, cannyValue[i], blurValue[j]);
 			vector<vector<Point>> contours;
-			vector<Vec4i> hierarchy;
-			//提取边框
-			findContours(scanImage, contours, hierarchy, RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+			//vector<Vec4i> hierarchy;
+			////提取边框
+			//findContours(scanImage, contours, hierarchy, RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 		
+			contours = getPointLists(scanImage);
+
 			//按面积排序
 			std::sort(contours.begin(), contours.end(), sortByArea);
 			if (contours.size() > 0) {
@@ -147,16 +173,23 @@ Mat Scanner::resizeImage() {
 Mat Scanner::preprocessedImage(Mat &image, int cannyValue, int blurValue) {
 	Mat grayMat;
 	cvtColor(image, grayMat, CV_BGR2GRAY);
+
 	if (isHisEqual){
 		equalizeHist(grayMat, grayMat);
 	}
 	Mat blurMat;
 	GaussianBlur(grayMat, blurMat, Size(blurValue, blurValue), 0);
-	Mat cannyMat;
-	Canny(blurMat, cannyMat, 50, cannyValue, 3);
+
 	Mat thresholdMat;
-	threshold(cannyMat, thresholdMat, 0, 255, CV_THRESH_OTSU);
-	return blurMat;
+	adaptiveThreshold(blurMat, thresholdMat, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 25, 5.0);
+
+
+
+	Mat cannyMat;
+	Canny(thresholdMat, cannyMat, 50, cannyValue, 3);
+
+	//threshold(cannyMat, thresholdMat, 0, 255, CV_THRESH_OTSU);
+	return cannyMat;
 	//adaptiveThreshold(grayMat, thresholdMat, 255, CV_ADAPTIVE_THRESH_MEAN_C, CV_THRESH_BINARY, 25, 5.0);
 	//return blurMat;
 }
