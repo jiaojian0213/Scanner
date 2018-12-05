@@ -33,6 +33,9 @@
     <ClCompile Include="..\..\..\..\software\opencv\sources\samples\cpp\contours2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\software\opencv\sources\samples\cpp\warpPerspective_demo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ImgException.h">

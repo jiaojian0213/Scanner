@@ -46,13 +46,13 @@ vector<vector<Point>> Scanner::getPointLists(Mat &image){
 
 vector<Point> Scanner::scanPoint() {
 	vector<Point> result;
-	int cannyValue[] = { 100, 150, 300 };
-	int blurValue[] = { 3, 7, 11, 15 };
+	int cannyValue[] = { 70,100, 150, 300 };
+	int blurValue[] = { 3 ,5, 7, 9, 11, 15 };
 	//缩小图片尺寸
 	Mat image = resizeImage();
 	for (int i = 0; i < 3; i++){
 		for (int j = 0; j < 4; j++){
-			std::cout << i << "---" << j << std::endl;
+			std::cout << blurValue[j] << "---" << cannyValue[i] << std::endl;
 			//预处理图片
 			Mat scanImage = preprocessedImage(image, cannyValue[i], blurValue[j]);
 			vector<vector<Point>> contours;
@@ -127,7 +127,7 @@ vector<Point> Scanner::scanPoint() {
 					}
 				}
 			}
-			std::cout << i << "---" << j << std::endl;
+			//std::cout << i << "---" << j << std::endl;
 		}
 	}
 	//当没选出所需要区域时，如果还没做过直方图均衡化则尝试使用均衡化，但该操作只执行一次，若还无效，则判定为图片不能裁出有效区域，返回整张图
@@ -358,5 +358,13 @@ long long Scanner::pointSideLine(Point &lineP1, Point &lineP2, Point &point) {
 	return (x - x1)*(y2 - y1) - (y - y1)*(x2 - x1);
 }
 
+
+void Scanner::ShowInWindow(const char *pWinName)
+{
+	namedWindow(pWinName);
+	imshow(pWinName, srcBitmap);
+
+	//waitKey();
+}
 
 

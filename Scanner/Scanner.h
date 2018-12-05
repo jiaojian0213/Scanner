@@ -10,7 +10,8 @@
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc_c.h"
 #include "opencv2/imgproc/imgproc.hpp"
-
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/highgui/highgui_c.h>
 
 namespace scanner{
 
@@ -24,6 +25,9 @@ namespace scanner{
         std::vector<cv::Point> scanPoint();
 		cv::Mat resizeImage();
 		cv::Mat preprocessedImage(cv::Mat &image, int cannyValue, int blurValue);
+
+		//show the obj m_Mat on window
+		void ShowInWindow(const char *pWinName);
     private:
         cv::Mat srcBitmap;
         float resizeScale = 1.0f;

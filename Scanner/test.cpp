@@ -14,15 +14,19 @@
 #include <vector>
 
 #include <Scanner.h>
-
+#include <math.h>
+#include <opencv2/calib3d.hpp>
 using namespace std;
 using namespace cv;
 using namespace scanner;
-
+using std::max;
 
 static const int BLACK = 0;
 static const int WHITE = 255;
 
+#ifndef max
+#define max(a,b)            (((a) > (b)) ? (a) : (b))
+#endif
 
 void setPixel(Mat image, int x, int y, uchar pValue);
 int getPixel(Mat image, int x, int y);
@@ -222,6 +226,33 @@ int blurValue = 7;
 int cannyValue = 20;
 
 Mat temp;
+static void on_trackbar1(int, void*)
+{
+	Mat cannyMat;
+	int _blurValue = blurValue + 2;
+	if (_blurValue < 1){
+	_blurValue = 1;
+	}
+	if (_blurValue %2 == 0){
+	_blurValue +=1;
+	}
+
+	cout << _blurValue << endl;
+	GaussianBlur(temp, cannyMat, Size(_blurValue, _blurValue), 0);
+
+	/*Mat cannyMat;
+	Canny(blurMat, cannyMat, 50, 50, 3);
+	int _blurValue = cannyValue * 10;
+	Mat blurMat;
+	GaussianBlur(temp, blurMat, Size(7, 7), 0);
+	cout << _blurValue << endl;
+	Mat cannyMat;
+	Canny(blurMat, cannyMat, 50, _blurValue, 3);*/
+
+
+	imshow("contours", cannyMat);
+}
+
 static void on_trackbar(int, void*)
 {
 	/*int _blurValue = blurValue + 2;
@@ -248,6 +279,46 @@ static void on_trackbar(int, void*)
 	imshow("contours", cannyMat);
 }
 
+float distancePoint(Point2f a, Point2f b)
+{
+	float y = a.y - b.y;
+	float x = a.x - b.x;
+	return sqrt(pow(x, 2) + pow(y, 2));
+}
+
+void getPoint2fTris(Point2f centorPoint, Rect2f srcRect, vector<Point> scanPoints, Point2f* srcTri, int type = 0){
+	for (int index = 0; index < scanPoints.size(); index++){
+		float half = srcRect.height / 2;
+		float xSub = (centorPoint.x - scanPoints[index].x);
+		float ySub = (centorPoint.y - scanPoints[index].y);
+		float x,y;
+		if (index == 0){
+			half = srcRect.height / 2;
+			x = xSub > 0 ? centorPoint.x - abs(half / ySub * xSub) : centorPoint.x + abs(half / ySub * xSub);
+			y = srcRect.y;
+		}else if(index == 1){
+			half = srcRect.width / 2;
+			y =  ySub > 0 ? centorPoint.y - abs(half / xSub * ySub) : centorPoint.y + abs(half / xSub * ySub);
+			x = srcRect.x + srcRect.width;
+		}
+		else if (index == 2){
+			half = srcRect.height / 2;
+			x = xSub > 0 ? centorPoint.x - abs(half / ySub * xSub) : centorPoint.x + abs(half / ySub * xSub);
+			y = srcRect.y + srcRect.width;
+		}
+		else if (index == 3){
+			half = srcRect.width / 2;
+			y = ySub > 0 ? centorPoint.y - abs(half / xSub * ySub) : centorPoint.y + abs(half / xSub * ySub);
+			x = srcRect.x;
+		}
+		if (type == 1){
+			x = x - srcRect.x;
+			y = y - srcRect.y;
+		}
+		srcTri[index] = Point2f(x, y);
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	
@@ -261,31 +332,37 @@ int main(int argc, char* argv[])
 		}
 	}*/
 	//搜索D盘下Test文件夹下的所有文件
-	string strFilePath = "C:\\Users\\jiao\\Desktop\\耳标图片\\111.jpg";
+	string strFilePath = "C:\\Users\\jiaojian\\Desktop\\耳标图片\\111.jpg";
 	Mat img = imread(strFilePath);
 
 	
 	
 	try{
-
-		
-		
 		Scanner docScanner(img);
-		//cvtColor(img.clone(), temp, COLOR_BGR2GRAY);
-		//Mat blurMat;
-		//GaussianBlur(temp, blurMat, Size(blurValue, blurValue), 0);
+		/*cvtColor(img.clone(), temp, COLOR_BGR2GRAY);
+		Mat blurMat;
+		GaussianBlur(temp, blurMat, Size(blurValue, blurValue), 0);
 
-		//namedWindow("contours", 1);
-		////createTrackbar("levels+3", "contours", &blurValue, 20, on_trackbar);
-		//createTrackbar("levels+3", "contours", &cannyValue, 20, on_trackbar);
-		//on_trackbar(0, 0);
+		namedWindow("contours", 1);
+		createTrackbar("levels+3", "contours", &blurValue, 20, on_trackbar1);
 
-		Mat image = docScanner.resizeImage();
-		Mat img1 = docScanner.preprocessedImage(image, 50, 3);
-		//IplImage result(img1);
-		///readImage(image, img1);
+		namedWindow("contourscanny", 1);
+		createTrackbar("levels+3", "contourscanny", &cannyValue, 20, on_trackbar);
+		on_trackbar(0, 0);
+		on_trackbar1(0, 0);*/
 
-		
+		//Mat image = docScanner.resizeImage();
+		//Mat img1 = docScanner.preprocessedImage(image, 50, 9);
+		////IplImage result(img1);
+		/////readImage(image, img1);
+
+
+		//namedWindow("bina");
+		//imshow("bina", img1);
+		//imshow("bina", cv::cvarrToMat(&result));
+
+
+		//docScanner.ShowInWindow("aaaa");
 		//cout << "img " << img.channels() << "-temp " << temp.channels() << endl;
 		
 		//int cannyValue[] = { 100, 150, 300 };
@@ -310,34 +387,18 @@ int main(int argc, char* argv[])
 				//imshow("灰色", dd);
 			//}
 		//}
-		int padding = 100;
+		float padding = 200;
 		vector<Point> scanPoints;
 		scanPoints = docScanner.scanPoint();
 		if (scanPoints.size() == 4) {
 			for (int i = 0; i < 4; ++i) {
 				cout << scanPoints[i] << endl;
-				/*if (i == 0){
-					scanPoints[i].x -= padding;
-					scanPoints[i].y -= padding;
-				}
-				else if (i == 1){
-					scanPoints[i].x += padding;
-					scanPoints[i].y -= padding;
-				}
-				else if (i == 2){
-					scanPoints[i].x += padding;
-					scanPoints[i].y += padding;
-				}
-				else if (i == 3){
-					scanPoints[i].x -= padding;
-					scanPoints[i].y += padding;
-				}*/
 			}
 		}
 
 		IplImage result = IplImage(img);
 		CvScalar color = CV_RGB(255, 0, 0);
-		cvRectangle(&result, cvPoint(scanPoints[0].x, scanPoints[0].y), cvPoint(scanPoints[2].x, scanPoints[2].y), CV_RGB(255, 0, 0));
+		//cvRectangle(&result, cvPoint(scanPoints[0].x, scanPoints[0].y), cvPoint(scanPoints[2].x, scanPoints[2].y), CV_RGB(255, 0, 0));
 		cvLine(&result, cvPoint(scanPoints[0].x, scanPoints[0].y), cvPoint(scanPoints[1].x, scanPoints[1].y), color);
 		cvLine(&result, cvPoint(scanPoints[1].x, scanPoints[1].y), cvPoint(scanPoints[2].x, scanPoints[2].y), color);
 		cvLine(&result, cvPoint(scanPoints[2].x, scanPoints[2].y), cvPoint(scanPoints[3].x, scanPoints[3].y), color);
@@ -350,18 +411,49 @@ int main(int argc, char* argv[])
 
 		float width = xMax - xMin;
 		float height = yMax - yMin;
-		CvRect rect(xMin, yMin, (xMax - xMin) , (xMax - xMin) );
-		xMin = xMin - width / 3 ;
-		xMax = xMax + width / 3;
-		yMax = yMax + height / 3;
-		yMin = yMin - height / 3;
+		float rectWidth = (xMax - xMin) > (yMax - yMin) ? (xMax - xMin) : (yMax - yMin);
+		CvRect rect(xMin, yMin, (xMax - xMin), (yMax - yMin));
+		float scale = 2;
+		//float padding = ((xMax - xMin) / scale);
+		CvRect srcRect(xMin - padding, yMin - padding, (xMax - xMin) + padding *2, (yMax - yMin) + padding*2);
 
-		CvRect cvRect(xMin, yMin, xMax - xMin, yMax - yMin);
-		cout << "rect " << rect.width << endl;
-		cout << "cvRect " << cvRect.width << endl;
+		cvRectangle(&result, cvPoint(srcRect.x, srcRect.y), cvPoint(srcRect.width + srcRect.x, srcRect.y + srcRect.height), CV_RGB(0, 255, 0));
+
+		Point2f centorPoint = Point2f(rect.x + rect.width / 2, rect.y + rect.height / 2);
+		cvCircle(&result, cvPoint(centorPoint.x, centorPoint.y), 5, cvScalar(0, 255, 0), 1);
+		//cvCircle(&result, cvPoint(centorPoint.x - 47, centorPoint.y - 175), 5, cvScalar(0, 255, 0), 1);
+		//cvCircle(&result, cvPoint(centorPoint.x - 60.4, srcRect.y), 5, cvScalar(0, 255, 0), 1);
+		//--------------------------------
+		float x = scanPoints[0].x;
+		float y = scanPoints[0].y;
+
+		cout << "point x = " << x << " y = " << y << endl;
+
+		cout << "centorPoint x = " << centorPoint.x << " y = " << centorPoint.y << endl;
+		cout << "srcRect x = " << srcRect.width << " y = " << srcRect.height << endl;
+
+
+		//Point2f point1(centorPoint.x - (srcRect.height / 2 / (centorPoint.y - scanPoints[0].y) * (centorPoint.x - scanPoints[0].x)), srcRect.y);
+		//cvCircle(&result, cvPoint(point1.x, point1.y), 5, cvScalar(0, 255, 0), 1);
+
+
+
+		/*Point2f p0 = getPoint(0, centorPoint, srcRect, scanPoints);
+		cvCircle(&result, cvPoint(p0.x, p0.y), 5, cvScalar(0, 255, 0), 1);
+		Point2f p1 = getPoint(1, centorPoint, srcRect, scanPoints);
+		cvCircle(&result, cvPoint(p1.x, p1.y), 5, cvScalar(0, 255, 0), 1);
+		Point2f p2 = getPoint(2, centorPoint, srcRect, scanPoints);
+		cvCircle(&result, cvPoint(p2.x, p2.y), 5, cvScalar(0, 255, 0), 1);
+		Point2f p3 = getPoint(3, centorPoint, srcRect, scanPoints);
+		cvCircle(&result, cvPoint(p3.x, p3.y), 5, cvScalar(0, 255, 0), 1);*/
+		//---------------------------------
+
+
+		cout << "rect  x= " << rect.x << " y = "<< rect.y <<" width = "<< rect.width << endl;
+
 
 		
-		cvSetImageROI(&result, cvRect);
+		cvSetImageROI(&result, srcRect);
 
 		namedWindow("灰色1");
 		//imshow("灰色1", warp_dst);
@@ -377,46 +469,65 @@ int main(int argc, char* argv[])
 		///// 设置源图像和目标图像上的三组点以计算仿射变换
 		
 		//在四边形内适用
-		/*srcTri[0] = Point(scanPoints[0].x - cvRect.x, (scanPoints[0].y - cvRect.y));
-		srcTri[1] = Point(cvRect.width, scanPoints[1].y - cvRect.y);
-		srcTri[2] = Point(scanPoints[2].x - cvRect.x, (scanPoints[2].y - cvRect.y));
-		srcTri[3] = Point(scanPoints[3].x - cvRect.x, (scanPoints[3].y - cvRect.y));
+		/*srcTri[0] = Point2f(scanPoints[0].x - srcRect.x, (scanPoints[0].y - srcRect.y));
+		srcTri[1] = Point2f(scanPoints[1].x - srcRect.x, (scanPoints[1].y - srcRect.y));
+		srcTri[2] = Point2f(scanPoints[2].x - srcRect.x, (scanPoints[2].y - srcRect.y));
+		srcTri[3] = Point2f(scanPoints[3].x - srcRect.x, (scanPoints[3].y - srcRect.y));
 
 		dstTri[0] = Point(0, 0);
 		dstTri[1] = Point(cvRect.width, 0);
 		dstTri[2] = Point(cvRect.width, cvRect.height);
 		dstTri[3] = Point(0, cvRect.height);*/
 
-
-		srcTri[0] = Point2f(scanPoints[0].x - rect.x, (scanPoints[0].y - rect.y));
-		srcTri[1] = Point2f(scanPoints[1].x - rect.x, (scanPoints[1].y - rect.y));
-		srcTri[2] = Point2f(scanPoints[2].x - rect.x, (scanPoints[2].y - rect.y));
-		srcTri[3] = Point2f(scanPoints[3].x - rect.x, (scanPoints[3].y - rect.y));
-
-		dstTri[0] = Point2f(0, 0);
-		dstTri[1] = Point2f(rect.width, 0-25);
-		dstTri[2] = Point2f(rect.width, rect.height-25);
-		dstTri[3] = Point2f(0, rect.height);
+		getPoint2fTris(centorPoint, srcRect, scanPoints, srcTri);
 
 
-		/*dstTri[0] = Point(0, 0);
-		dstTri[1] = Point(rect.width, (scanPoints[1].y - rect.y) - (scanPoints[1].y - scanPoints[0].y));
-		dstTri[2] = Point(rect.width, rect.height);
-		dstTri[3] = Point((scanPoints[0].x - rect.x) - (scanPoints[0].x - scanPoints[3].x), rect.height);*/
+		
+		for (int i = 0; i < 4; i++){
+			cout << "tri" << i << " x=" << srcTri[i].x << "  y=" << srcTri[i].y << endl;
+		}
+		
+		dstTri[0] = Point(0, 0);
+		dstTri[1] = Point(srcRect.width, 0);
+		dstTri[2] = Point(srcRect.width, srcRect.height);
+		dstTri[3] = Point(0, srcRect.height);
 
 
+		for (int i = 0; i < 4; i++){
+			cout << "dst" << i << " x=" << dstTri[i].x << "  y=" << dstTri[i].y << endl;
+		}
 
 
 		warp_mat = getPerspectiveTransform(srcTri, dstTri);
 		warpPerspective(src, warp_dst, warp_mat, warp_dst.size());
 
+		/*CvMat* M = cvCreateMat(4, 4, CV_32FC1);
+		int step = M->step / sizeof(float);
+		float *data = M->data.fl;
+		(data + i*step)[j] = 3.0;*/
+
+		uchar* data = warp_mat.data;
+		cout << warp_mat.cols << "rows " << warp_mat.rows << endl;
+		for (int i = 0; i < warp_mat.cols; i++){
+			for (int j = 0; j < warp_mat.rows; j++){
+				cout << ((float)data[i * 3 + j]) << endl;
+			}
+		}
+
 		/// 求得仿射变换
 		//warp_mat = getAffineTransform(srcTri, dstTri);
 		/// 对源图像应用上面求得的仿射变换
 		//warpAffine(src, warp_dst, warp_mat, warp_dst.size());
+		IplImage result1(warp_dst);
+		cvCircle(&result1, cvPoint(centorPoint.x, centorPoint.y), 50, cvScalar(0, 255, 0), 1);
+
+
 		namedWindow("灰色");
-		imshow("灰色", warp_dst);
-		//imshow("灰色",  cv::cvarrToMat(&result));
+		//imshow("灰色", warp_dst);
+		imshow("灰色",  cv::cvarrToMat(&result1));
+
+		//Rect roiRect();
+		//cvSetImageROI(&result, srcRect);
 	}
 	catch (cv::Exception &e){
 		cout << "aaa " << e.err << e.msg << endl;
